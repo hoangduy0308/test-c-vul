@@ -1,0 +1,9 @@
+{
+  "vocab_size": 168,
+  "max_len": 500,
+  "embedding_dim": 100,
+  "num_cwe_classes": 10,
+  "train_samples": 180398,
+  "val_samples": 22550,
+  "test_samples": 22553
+}
