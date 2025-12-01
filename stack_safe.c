@@ -1,45 +1,35 @@
 #include <stdio.h>
+#include <string.h>
 
 /*
- * Safe Stack Buffer Usage (Adversarial Version)
+ * Idiomatic Safe C Version
  * 
  * Description:
- * This version replaces common library calls like memset and direct array indexing
- * with manual loops and pointer arithmetic to test if the AI model's detection
- * logic is based on specific keywords/patterns.
+ * This version uses high-level, standard C idioms.
+ * - No manual memory manipulation (memset, loops).
+ * - No pointer arithmetic.
+ * - Uses string literals and standard safe functions (snprintf).
  */
 
-void safe_process(const char *data) {
-    // Fixed-size buffer on the stack
-    char local_buf[64];
-
-    // FIX: Use snprintf to limit copy size
-    snprintf(local_buf, 64, "%s", data);
-
-    // Use puts instead of printf to avoid potential printf-related triggers
-    puts("Buffer content processed safely.");
+void process_data(const char *input) {
+    char buffer[64];
+    
+    // snprintf is the standard safe way to copy strings.
+    // It automatically handles truncation and null-termination.
+    snprintf(buffer, sizeof(buffer), "%s", input);
+    
+    printf("Processed: %s\n", buffer);
 }
 
-int main(int argc, char *argv[]) {
-    // Create a string larger than the buffer size
-    char input_data[100];
-    
-    // REFACTOR: Replace memset with a manual loop
-    // This avoids the 'memset' token which might be flagged
-    int i;
-    for (i = 0; i < 99; i++) {
-        *(input_data + i) = 'A'; // Use pointer arithmetic instead of array index
-    }
-    
-    // Null terminate manually using pointer arithmetic
-    *(input_data + 99) = '\0';
+int main(void) {
+    // Initialize with a long string literal directly.
+    // This avoids manual buffer manipulation (memset/loops) entirely.
+    // The string is deliberately longer than 64 bytes to test safe truncation.
+    const char *long_string = "This_is_a_very_long_string_that_is_definitely_longer_than_sixty_four_bytes_to_test_safety_mechanisms";
 
-    puts("Starting safe processing...");
-    
-    // Call the safe function
-    safe_process(input_data);
+    printf("Input length: %zu\n", strlen(long_string));
 
-    puts("Execution finished without errors.");
+    process_data(long_string);
 
     return 0;
 }
