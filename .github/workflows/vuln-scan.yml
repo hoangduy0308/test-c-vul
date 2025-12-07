@@ -113,7 +113,7 @@ jobs:
             --output-format sarif \
             --output-file c-vuln-results.sarif \
             --prob-threshold 0.5 \
-            --fail-threshold 0.7 \
+            --fail-threshold 0.5 \
             --model-dir models \
             --verbose
 
@@ -125,7 +125,7 @@ jobs:
             --output-format sarif \
             --output-file c-vuln-results.sarif \
             --prob-threshold 0.5 \
-            --fail-threshold 0.7 \
+            --fail-threshold 0.5 \
             --model-dir models \
             --verbose
 
