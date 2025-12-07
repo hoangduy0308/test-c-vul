@@ -60,17 +60,23 @@ jobs:
           pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install scikit-learn numpy tqdm libclang
 
+      - name: Install vuln_scanner from main repo
+        run: |
+          git clone --depth 1 https://github.com/hoangduy0308/c-vulnerability-detection.git /tmp/vuln-scanner
+          cp -r /tmp/vuln-scanner/vuln_scanner .
+          cp -r /tmp/vuln-scanner/xu_li_dataset .
+
       - name: Download model from release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Try to download from latest release, fallback to local if not available
           mkdir -p models
-          if gh release download --pattern 'best_model.pt' --dir models 2>/dev/null; then
+          # Download from main repo release
+          if curl -sL -o models/best_model.pt "https://github.com/hoangduy0308/c-vulnerability-detection/releases/latest/download/best_model.pt" 2>/dev/null && [ -s models/best_model.pt ]; then
             echo "Downloaded model from release"
-          elif [ -f "output/best_model.pt" ]; then
-            echo "Using local model"
-            cp output/best_model.pt models/
+          elif [ -f "/tmp/vuln-scanner/output/best_model.pt" ]; then
+            echo "Using model from cloned repo"
+            cp /tmp/vuln-scanner/output/best_model.pt models/
           else
             echo "::warning::No model found. Skipping scan."
             echo "SKIP_SCAN=true" >> $GITHUB_ENV
