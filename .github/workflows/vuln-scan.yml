@@ -1,0 +1,111 @@
+name: C Vulnerability Scan
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '**/*.c'
+      - '**/*.cpp'
+      - '**/*.cc'
+      - '**/*.cxx'
+      - '**/*.h'
+      - '**/*.hpp'
+      - '**/*.hxx'
+  push:
+    branches: [main]
+    paths:
+      - '**/*.c'
+      - '**/*.cpp'
+      - '**/*.h'
+      - '**/*.hpp'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  vuln-scan:
+    name: Vulnerability Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install scikit-learn numpy tqdm
+
+      - name: Download model from release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Try to download from latest release, fallback to local if not available
+          mkdir -p models
+          if gh release download --pattern 'best_model.pt' --dir models 2>/dev/null; then
+            echo "Downloaded model from release"
+          elif [ -f "output/best_model.pt" ]; then
+            echo "Using local model"
+            cp output/best_model.pt models/
+          else
+            echo "::warning::No model found. Skipping scan."
+            echo "SKIP_SCAN=true" >> $GITHUB_ENV
+          fi
+
+      - name: Run vulnerability scan (changed files only)
+        if: env.SKIP_SCAN != 'true' && github.event_name == 'pull_request'
+        run: |
+          python -m vuln_scanner.cli \
+            --only-changed \
+            --base-ref origin/${{ github.base_ref }} \
+            --output-format sarif \
+            --output-file c-vuln-results.sarif \
+            --prob-threshold 0.5 \
+            --model-dir models \
+            --verbose
+
+      - name: Run vulnerability scan (full)
+        if: env.SKIP_SCAN != 'true' && github.event_name != 'pull_request'
+        run: |
+          python -m vuln_scanner.cli \
+            --path . \
+            --output-format sarif \
+            --output-file c-vuln-results.sarif \
+            --prob-threshold 0.5 \
+            --model-dir models \
+            --verbose
+
+      - name: Upload SARIF to GitHub Security
+        if: env.SKIP_SCAN != 'true' && always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: c-vuln-results.sarif
+          category: c-vulnerability-detection
+
+      - name: Upload scan results artifact
+        if: env.SKIP_SCAN != 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vulnerability-scan-results
+          path: c-vuln-results.sarif
+          retention-days: 30
