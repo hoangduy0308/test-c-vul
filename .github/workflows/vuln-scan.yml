@@ -71,15 +71,37 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p models
-          # Download from main repo release
-          if curl -sL -o models/best_model.pt "https://github.com/hoangduy0308/c-vulnerability-detection/releases/latest/download/best_model.pt" 2>/dev/null && [ -s models/best_model.pt ]; then
-            echo "Downloaded model from release"
+          MODEL_URL="https://github.com/hoangduy0308/c-vulnerability-detection/releases/latest/download/best_model.pt"
+          
+          # Download and verify it's a valid file (not HTML)
+          if curl -sL -o models/best_model.pt "$MODEL_URL" && [ -s models/best_model.pt ]; then
+            # Check if file is valid (not HTML)
+            if file models/best_model.pt | grep -q "data\|archive"; then
+              echo "Downloaded model from release ($(du -h models/best_model.pt | cut -f1))"
+            else
+              echo "Downloaded file is not a valid model, checking cloned repo..."
+              rm -f models/best_model.pt
+              if [ -f "/tmp/vuln-scanner/output/best_model.pt" ]; then
+                cp /tmp/vuln-scanner/output/best_model.pt models/
+                echo "Using model from cloned repo"
+              else
+                echo "::warning::No valid model found. Skipping scan."
+                echo "SKIP_SCAN=true" >> $GITHUB_ENV
+              fi
+            fi
           elif [ -f "/tmp/vuln-scanner/output/best_model.pt" ]; then
             echo "Using model from cloned repo"
             cp /tmp/vuln-scanner/output/best_model.pt models/
           else
             echo "::warning::No model found. Skipping scan."
             echo "SKIP_SCAN=true" >> $GITHUB_ENV
+          fi
+          
+          # Debug: show file info
+          if [ -f models/best_model.pt ]; then
+            echo "Model file info:"
+            ls -lh models/best_model.pt
+            file models/best_model.pt
           fi
 
       - name: Run vulnerability scan (changed files only)
