@@ -115,6 +115,7 @@ jobs:
             --prob-threshold 0.5 \
             --fail-threshold 0.5 \
             --model-dir models \
+            --no-slicing \
             --verbose
 
       - name: Run vulnerability scan (full)
@@ -127,6 +128,7 @@ jobs:
             --prob-threshold 0.5 \
             --fail-threshold 0.5 \
             --model-dir models \
+            --no-slicing \
             --verbose
 
       - name: Create empty SARIF if scan was skipped
