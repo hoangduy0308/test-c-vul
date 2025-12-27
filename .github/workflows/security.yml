@@ -1,0 +1,22 @@
+name: Vulnerability Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - uses: hoangduy0308/C-Vul-Devign@main
+        with:
+          threshold: '0.36'
+          scan-mode: 'diff'
