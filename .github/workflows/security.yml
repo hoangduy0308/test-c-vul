@@ -11,4 +11,5 @@ jobs:
       - uses: hoangduy0308/C-Vul-Devign@main
         with:
           threshold: '0.36'
+          scan-mode: 'full'
           fail-on-findings: 'true'
