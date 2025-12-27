@@ -1,4 +1,4 @@
-#include <stdio.h>
+
 #include <string.h>
 
 int main(int argc, char *argv[]) {
@@ -7,3 +7,4 @@ int main(int argc, char *argv[]) {
     printf("%s\n", buffer);
     return 0;
 }
+
